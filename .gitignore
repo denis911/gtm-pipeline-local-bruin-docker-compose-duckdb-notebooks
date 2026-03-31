@@ -205,3 +205,14 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# .bruin.yml is a configuration file for bruin, may have secrets - keeping it local
+.bruin.yml
+logs/runs
+logs/*.log
+*.py[cod]
+
+logs/queries
+
+# in case our duckdb database gets too big
+duckdb.db

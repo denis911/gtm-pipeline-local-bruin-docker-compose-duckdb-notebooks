@@ -1,0 +1,12 @@
+[project]
+name = "gtm-pipeline-local-bruin-docker-compose-duckdb-notebooks"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "bruin>=0.1.2",
+    "duckdb>=1.5.1",
+    "notebook>=7.5.5",
+    "pandas>=3.0.2",
+]
