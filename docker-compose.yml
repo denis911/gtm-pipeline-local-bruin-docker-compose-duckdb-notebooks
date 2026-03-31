@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  bruin:
+    image: ghcr.io/bruin-data/bruin:latest
+    # Optional: pin a stable version for reproducibility
+    # image: ghcr.io/bruin-data/bruin:v0.XX.X   # replace with latest stable from GitHub releases
+
+    container_name: bruin-local-pipeline
+
+    # Mount the entire project so you can edit SQL + Python files on Windows
+    volumes:
+      - .:/workspace                  # main project (SQL, Python, .bruin.yml, pipeline.yml, etc.)
+      - bruin_data:/data              # persistent volume for any extra outputs / temp files
+
+    working_dir: /workspace
+
+    # Keep it interactive (useful for seeing logs)
+    stdin_open: true
+    tty: true
+
+    # Optional: environment variables (e.g. for date parameterisation or secrets)
+    environment:
+      - PIPELINE_DATE=${PIPELINE_DATE:-}   # you can set this from host
+      # - OTHER_SECRET=yourvalue
+
+      

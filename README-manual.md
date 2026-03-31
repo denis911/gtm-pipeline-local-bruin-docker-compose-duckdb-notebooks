@@ -26,10 +26,17 @@ For bruin use
 uv add bruin
 ```
 
-and init bruin project as follows:
+and run bruin in docker as follows - because win 11 stops it:
 
 ```bash
-uv run bruin init
+# 1. Validate everything
+docker compose run --rm bruin bruin validate
+
+# 2. Run the full pipeline for today (or a specific date)
+docker compose run --rm -e PIPELINE_DATE=2026-03-31 bruin bruin run . --date 2026-03-31
+
+# Or if you use environment variable in your assets:
+docker compose run --rm bruin bruin run .
 ```
 
 NB! Structure for single Bruin project per repo (most common):
@@ -41,27 +48,17 @@ repo-root/
 └── ...
 ```
 
-In default case we start with chess players dataset pipeline, like so:
-
-```bash
-uv run bruin init default .
-```
-
-but in our case specifically we use NY taxi dataset pipeline:
-
-```bash
-uv run bruin init zoomcamp .
-```
-
 then check with:
+
 ```bash
 uv run bruin validate .
-``` 
+```
 
 and finally run with:
+
 ```bash
 uv run bruin run .
-``` 
+```
 
 As a result a new duckdb flie is created - `duckdb.db`
 Run the following to check the contents of the duckdb file:
