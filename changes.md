@@ -72,7 +72,104 @@ This document outlines the changes required to migrate the Bruin pipeline from G
 
 1. **GitHub Data Source**: GitHub Archive (SELECTED)
 2. **Incremental Strategy**: UPSERT (idempotent - re-running same dates won't duplicate)
-3. **Downstream SQL**: Jupyter Notebooks for ad-hoc analysis (no staging/reporting SQL in Bruin)
+3. **Downstream SQL**: Jupyter Notebooks for ad-hoc analysis OR Bruin SQL assets
+4. **Asset Organization**: Assets to be placed in `pipeline/` folder (Bruin standard)
+
+## New: Second Pipeline Step - Aggregation SQL
+
+User created `fct_growth_signals.sql` - A downstream aggregation step:
+
+```sql
+/* @bruin
+name: gtm_intelligence_dwh.fct_growth_signals
+type: bq.sql
+materialization:
+  type: table
+  partition_by: signal_date
+  cluster_by: ["company_name", "event_type"]
+depends:
+  - ingest_github_signals
+@bruin */
+
+SELECT
+    DATE(created_at) as signal_date,
+    SPLIT(repo_name, '/')[OFFSET(0)] as company_name, 
+    repo_name,
+    repo_url,
+    event_type,
+    COUNT(*) as signal_count,
+    CASE 
+        WHEN COUNT(*) > 100 THEN 'High'
+        WHEN COUNT(*) > 10 THEN 'Medium'
+        ELSE 'Low'
+    END as intent_priority,
+    CURRENT_TIMESTAMP() as processed_at
+FROM 
+    ...
+WHERE 
+    DATE(created_at) = '{{ BRUIN_START_DATE | default('2026-03-19') }}'
+GROUP BY 1, 2, 3, 4, 5
+```
+
+**This needs conversion to DuckDB syntax:**
+- `SPLIT(repo_name, '/')[OFFSET(0)]` → DuckDB uses `SPLIT_PART(repo_name, '/', 1)`
+- Materialization settings need DuckDB equivalents
+- BigQuery external table reference → direct DuckDB table reference
+
+### DuckDB Version of fct_growth_signals.sql
+
+```sql
+/* @bruin
+name: fct_growth_signals
+type: duckdb.sql
+materialization:
+  type: table
+depends:
+  - ingest_github_signals
+@bruin */
+
+SELECT
+    DATE(created_at) as signal_date,
+    SPLIT_PART(repo_name, '/', 1) as company_name, 
+    repo_name,
+    repo_url,
+    event_type,
+    COUNT(*) as signal_count,
+    CASE 
+        WHEN COUNT(*) > 100 THEN 'High'
+        WHEN COUNT(*) > 10 THEN 'Medium'
+        ELSE 'Low'
+    END as intent_priority,
+    CURRENT_TIMESTAMP as processed_at
+FROM 
+    raw.github_signals
+WHERE 
+    signal_date = '{{ BRUIN_START_DATE | default('2026-03-19') }}'
+GROUP BY 1, 2, 3, 4, 5
+```
+
+**Key differences from BigQuery:**
+- `type: bq.sql` → `type: duckdb.sql`
+- `SPLIT(...)[OFFSET(0)]` → `SPLIT_PART(..., '/', 1)`
+- `CURRENT_TIMESTAMP()` → `CURRENT_TIMESTAMP` (DuckDB doesn't need parentheses)
+- Table reference: BigQuery external table → DuckDB table `raw.github_signals`
+
+## Organization Changes
+
+- **Docs folder**: Documentation moved to `docs/` folder
+  - `docs/README-bruin-full.md`
+  - `docs/README-manual.md`
+- **DuckDB file**: Added to `.gitignore` (file grows too large for Git)
+- **Assets folder**: Suggested structure:
+  ```
+  pipeline/
+  ├── pipeline.yml
+  └── assets/
+      ├── ingestion/
+      │   └── ingest_github_signals.py
+      └── staging/
+          └── fct_growth_signals.sql
+  ```
 
 ---
 
