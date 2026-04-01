@@ -1,0 +1,12 @@
+# Bruin pipeline configuration
+name: github-signals-pipeline
+schedule: daily
+start_date: "2026-03-01"
+
+default_connections:
+  duckdb: duckdb-default
+
+variables:
+  target_date:
+    type: string
+    default: "{{ env.PIPELINE_DATE | default(today) }}"

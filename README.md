@@ -1,2 +1,466 @@
-# gtm-pipeline-local-bruin-docker-compose-duckdb-notebooks
-Copied my GCP GTM pipeline and adapted it to run locally with docker compose on my win 11 PC, then use notebooks for data analysis - GTM hackathon prep.
+# GitHub Signals Pipeline - Local Bruin + DuckDB
+
+A data pipeline that downloads GitHub events (stars/watches) from [GitHub Archive](https://www.ghtorrent.org/) and stores them locally in DuckDB for analysis. Designed to run on Windows 11 using Docker Compose.
+
+## 🎯 What This Pipeline Does
+
+1. **Downloads** GitHub events for a specific date from GitHub Archive
+2. **Filters** for `WatchEvent` (GitHub stars) matching tech keywords from `structured_jobs.csv`
+3. **Stores** results in `local_data.duckdb` using idempotent upserts
+4. **Aggregates** signals into a fact table for analysis
+
+---
+
+## 📋 Prerequisites
+
+### Required Software
+
+| Software | Version | Download |
+|----------|---------|----------|
+| Docker Desktop | 4.0+ | [docker.com](https://www.docker.com/products/docker-desktop/) |
+| Git Bash | Any recent | [git-scm.com](https://git-scm.com/download/win) |
+| Python | 3.11+ | [python.org](https://www.python.org/downloads/) (optional, for local testing) |
+
+### Check Installation
+
+Open **Git Bash** and verify:
+
+```bash
+# Check Docker
+docker --version
+# Expected: Docker version 24.x.x or similar
+
+# Check Docker Compose
+docker compose version
+# Expected: Docker Compose version v2.x.x or similar
+
+# Verify Docker is running
+docker ps
+# Expected: Should show headers with no errors
+```
+
+---
+
+## 🚀 Quick Start
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/denis911/gtm-pipeline-local-bruin-docker-compose-duckdb-notebooks.git
+cd gtm-pipeline-local-bruin-docker-compose-duckdb-notebooks
+```
+
+### Step 2: Start Docker Desktop
+
+1. Open **Docker Desktop** from Start Menu
+2. Wait for the whale icon in the system tray to stop animating
+3. Green whale = Docker is running ✅
+
+### Step 3: Validate the Pipeline
+
+```bash
+# In Git Bash, run:
+docker compose run --rm bruin bruin validate .
+```
+
+**Expected output:**
+```
+✅ Validation passed
+```
+
+If you see errors, see [Debugging](#-debugging) section below.
+
+### Step 4: Run the Pipeline
+
+```bash
+# Run for a specific date (recommended for first test)
+docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run . --date 2026-03-19
+
+# Or run for today's date
+docker compose run --rm bruin bruin run .
+```
+
+### Step 5: Check the Results
+
+```bash
+# Open DuckDB CLI to inspect data
+docker compose run --rm bruin duckdb local_data.duckdb
+```
+
+In the DuckDB prompt:
+
+```sql
+-- Check raw signals table
+SELECT signal_date, COUNT(*) as count FROM raw.github_signals GROUP BY signal_date;
+
+-- Check aggregated signals
+SELECT * FROM fct_growth_signals LIMIT 10;
+
+-- Exit DuckDB
+.exit
+```
+
+---
+
+## 📁 Project Structure
+
+```
+├── .bruin.yml                    # Bruin connection configuration
+├── docker-compose.yml            # Docker Compose configuration
+├── pipeline/
+│   ├── pipeline.yml              # Pipeline settings
+│   └── assets/
+│       ├── ingestion/
+│       │   └── ingest_github_signals.py  # Downloads & filters GitHub data
+│       └── staging/
+│           └── fct_growth_signals.sql     # Aggregates signals
+├── structured_jobs.csv           # Tech keywords source
+├── local_data.duckdb            # Local database (gitignored, created on first run)
+└── README.md                    # This file
+```
+
+---
+
+## 🔧 Configuration Files Explained
+
+### `.bruin.yml` - Connection Settings
+
+This file tells Bruin how to connect to DuckDB:
+
+```yaml
+default_environment: default
+
+environments:
+  default:
+    connections:
+      duckdb:
+        - name: "duckdb-default"
+          path: "./local_data.duckdb"
+```
+
+- `path`: Location of your DuckDB file (relative to project root)
+- The DuckDB file is created automatically on first run
+
+### `pipeline/pipeline.yml` - Pipeline Settings
+
+```yaml
+name: github-signals-pipeline
+schedule: daily
+start_date: "2026-03-01"
+
+default_connections:
+  duckdb: duckdb-default
+
+variables:
+  target_date:
+    type: string
+    default: "{{ env.PIPELINE_DATE | default(today) }}"
+```
+
+- `schedule`: How often to run (`daily`, `hourly`, etc.)
+- `start_date`: When the pipeline starts tracking data
+- `variables`: Parameters that can be overridden
+
+### Environment Variables
+
+You can set these in a `.env` file (create if not exists):
+
+```bash
+# .env file
+PIPELINE_DATE=2026-03-19
+BRUIN_LOG_LEVEL=INFO
+```
+
+---
+
+## 🐳 Docker Compose Commands
+
+### Basic Commands
+
+```bash
+# Validate pipeline (check for errors)
+docker compose run --rm bruin bruin validate .
+
+# Run for a specific date
+docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run . --date 2026-03-19
+
+# Run for a date range
+docker compose run --rm bruin bruin run . --start-date 2026-03-01 --end-date 2026-03-31
+
+# Run with full refresh (reprocess all data)
+docker compose run --rm bruin bruin run . --full-refresh
+
+# Run specific asset only
+docker compose run --rm bruin bruin run . --select raw.github_signals
+```
+
+### Interactive Commands
+
+```bash
+# Open DuckDB CLI with the database
+docker compose run --rm bruin duckdb local_data.duckdb
+
+# Run Python with DuckDB
+docker compose run --rm bruin python -c "import duckdb; print(duckdb.__version__)"
+
+# Check Bruin version
+docker compose run --rm bruin bruin --version
+```
+
+### Cleanup Commands
+
+```bash
+# Stop and remove containers
+docker compose down
+
+# Remove all containers, volumes, and images (careful!)
+docker compose down -v --rmi all
+
+# Remove the DuckDB file to start fresh
+rm local_data.duckdb
+```
+
+---
+
+## 🔍 Debugging
+
+### Common Errors
+
+#### 1. "Docker Desktop is not running"
+
+```
+error during connect: Get "http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/..."
+```
+
+**Fix:** Start Docker Desktop from Start Menu, wait for green whale icon.
+
+#### 2. "Connection refused"
+
+```
+Cannot connect to the Docker daemon at unix:///var/run/docker.sock
+```
+
+**Fix:** Same as above - ensure Docker Desktop is running.
+
+#### 3. "Port already allocated"
+
+```
+Bind for 0.0.0.0:5432 failed: port is already allocated
+```
+
+**Fix:** Stop other containers using the same port:
+```bash
+docker compose down
+docker ps  # check for other containers
+```
+
+#### 4. Validation errors
+
+```bash
+# Run with more verbose output
+docker compose run --rm -e BRUIN_LOG_LEVEL=DEBUG bruin bruin validate .
+
+# Check specific asset
+docker compose run --rm bruin bruin run . --select raw.github_signals --dry-run
+```
+
+### Viewing Logs
+
+```bash
+# Follow logs in real-time (run in separate terminal)
+docker compose logs -f
+
+# View last 100 lines
+docker compose logs --tail=100
+
+# Save logs to file
+docker compose logs > pipeline.log 2>&1
+
+# View only errors
+docker compose logs | grep -i error
+```
+
+### Testing Individual Components
+
+```bash
+# Test GitHub Archive download
+docker compose run --rm bruin bash -c "curl -s https://data.githubarchive.org/2026-03-19-0.json.gz | gunzip | head -1"
+
+# Test DuckDB connection
+docker compose run --rm bruin duckdb local_data.duckdb -c "SELECT 1;"
+
+# List all tables
+docker compose run --rm bruin duckdb local_data.duckdb -c "SHOW TABLES;"
+
+# Check table schema
+docker compose run --rm bruin duckdb local_data.duckdb -c "DESCRIBE raw.github_signals;"
+```
+
+### Inspect Docker Container
+
+```bash
+# List running containers
+docker ps
+
+# List all containers (including stopped)
+docker ps -a
+
+# Open bash in the container
+docker compose run --rm bruin bash
+
+# Check container logs for specific service
+docker compose logs bruin --tail=50
+```
+
+---
+
+## 📊 Query Examples
+
+Connect to DuckDB and run these queries:
+
+```bash
+docker compose run --rm bruin duckdb local_data.duckdb
+```
+
+### Basic Queries
+
+```sql
+-- Total signals by date
+SELECT signal_date, COUNT(*) as total_signals
+FROM raw.github_signals
+GROUP BY signal_date
+ORDER BY signal_date DESC;
+
+-- Top 20 starred repos
+SELECT repo_name, COUNT(*) as stars
+FROM raw.github_signals
+WHERE event_type = 'WatchEvent'
+GROUP BY repo_name
+ORDER BY stars DESC
+LIMIT 20;
+
+-- Signals per hour
+SELECT 
+    DATE_TRUNC('hour', created_at) as hour,
+    COUNT(*) as events
+FROM raw.github_signals
+GROUP BY 1
+ORDER BY 1;
+```
+
+### Aggregated Signals
+
+```sql
+-- Growth signals by company
+SELECT company_name, SUM(signal_count) as total_signals
+FROM fct_growth_signals
+GROUP BY company_name
+ORDER BY total_signals DESC
+LIMIT 10;
+
+-- Intent priority distribution
+SELECT intent_priority, COUNT(*) as repos
+FROM fct_growth_signals
+GROUP BY intent_priority;
+```
+
+### Verification Queries
+
+```sql
+-- Check for duplicate dates (idempotency test)
+SELECT signal_date, COUNT(DISTINCT repo_name) as unique_repos
+FROM raw.github_signals
+GROUP BY signal_date
+HAVING COUNT(*) > COUNT(DISTINCT repo_name);
+
+-- Check ingestion history
+SELECT DISTINCT ingestion_date, COUNT(*) as records
+FROM raw.github_signals
+GROUP BY ingestion_date;
+```
+
+---
+
+## 🔄 Re-running the Pipeline
+
+The pipeline is **idempotent** - you can run it multiple times for the same date without duplicating data.
+
+```bash
+# Re-run for March 19th
+docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run . --date 2026-03-19
+
+# Run for multiple dates
+for date in 2026-03-19 2026-03-20 2026-03-21; do
+  docker compose run --rm -e PIPELINE_DATE=$date bruin bruin run . --date $date
+done
+```
+
+---
+
+## 🧹 Reset & Troubleshooting
+
+### Start Fresh
+
+```bash
+# Remove database and re-download all data
+rm local_data.duckdb
+docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run . --date 2026-03-19
+```
+
+### Check Docker Resources
+
+```bash
+# Docker disk usage
+docker system df
+
+# Clean up unused images/containers
+docker system prune -a
+
+# Restart Docker Desktop (from system tray)
+# Right-click Docker icon → Restart
+```
+
+### Verify GitHub Archive Data
+
+GitHub Archive files are available at: `https://data.githubarchive.org/{YYYY-MM-DD}-{HH}.json.gz`
+
+```bash
+# Test if GitHub Archive is accessible
+curl -I https://data.githubarchive.org/2026-03-19-0.json.gz
+# Expected: HTTP/2 200
+```
+
+---
+
+## 📚 Additional Resources
+
+- [Bruin Documentation](https://docs.bruin.com/)
+- [DuckDB Documentation](https://duckdb.org/docs/)
+- [GitHub Archive](https://www.ghtorrent.org/)
+- [Docker Desktop for Windows](https://docs.docker.com/desktop/install/windows-install/)
+
+---
+
+## 🆘 Getting Help
+
+1. **Check logs:** `docker compose logs -f`
+2. **Validate pipeline:** `docker compose run --rm bruin bruin validate .`
+3. **Search existing issues** in the repository
+4. **Create a new issue** with:
+   - Docker version: `docker --version`
+   - Docker Compose version: `docker compose version`
+   - Full error message
+   - Steps to reproduce
+
+---
+
+## 📝 Notes
+
+- **Windows 11 limitation:** Bruin is blocked by Windows security policies locally, hence Docker is required
+- **Data persistence:** `local_data.duckdb` is stored on your host machine, survives container restarts
+- **Gitignored:** The DuckDB file is in `.gitignore` to avoid bloating the repo (grows with data)
+- **Free data source:** GitHub Archive provides historical GitHub event data since 2011
+
+---
+
+*Last updated: 2026-04-01*
