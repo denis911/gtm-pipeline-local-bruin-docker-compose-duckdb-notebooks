@@ -183,13 +183,85 @@ GROUP BY 1, 2, 3, 4, 5
 - Creates BigQuery external tables
 
 **Required Changes:**
-- [ ] Remove BigQuery imports (`bigquery.Client`, `ExternalConfig`)
-- [ ] Remove GCS imports (`storage.Client`, `bucket.blob`)
-- [ ] Add DuckDB import for local storage
-- [ ] Replace BigQuery query with GitHub Archive download
-- [ ] Replace GCS upload with DuckDB UPSERT
-- [ ] Add idempotent upsert logic using composite key
-- [ ] Add table creation/upsert logic for DuckDB
+- [ ] Use Bruin's Python asset pattern with `materialize()` function
+- [ ] Return pandas DataFrame - Bruin handles DuckDB storage automatically
+- [ ] Use `merge` strategy with `primary_key` for idempotent upserts
+- [ ] Filter for WatchEvent matching tech keywords from `structured_jobs.csv`
+
+**Correct Python Asset Syntax (verified via Context7):**
+```python
+"""@bruin
+name: raw.github_signals
+type: python
+image: python:3.13
+connection: duckdb-default
+
+materialization:
+  type: table
+  strategy: merge
+
+columns:
+  - name: signal_date
+    type: date
+    primary_key: true
+  - name: repo_name
+    type: string
+    primary_key: true
+  - name: actor_login
+    type: string
+    primary_key: true
+  - name: repo_url
+    type: string
+  - name: event_type
+    type: string
+  - name: created_at
+    type: timestamp
+  - name: ingestion_date
+    type: date
+@bruin"""
+
+import pandas as pd
+import gzip
+import requests
+import os
+
+def get_tech_keywords(csv_path: str) -> list[str]:
+    """Extract tech keywords from structured_jobs.csv"""
+    # ... implementation
+    
+def download_github_archive(date: str) -> list:
+    """Download and parse GitHub Archive JSON"""
+    url = f"https://data.githubarchive.org/{date}.json.gz"
+    # ... implementation
+    
+def materialize():
+    # Get target date from Bruin variables
+    target_date = os.environ.get('BRUIN_START_DATE', '2026-03-19')
+    
+    # Download GitHub Archive data
+    events = download_github_archive(target_date)
+    keywords = get_tech_keywords("structured_jobs.csv")
+    
+    # Filter for WatchEvent matching keywords
+    filtered = [
+        e for e in events 
+        if e['type'] == 'WatchEvent' 
+        and any(k in e['repo']['name'].lower() for k in keywords)
+    ]
+    
+    # Convert to DataFrame
+    df = pd.DataFrame([{
+        'signal_date': target_date,
+        'repo_name': e['repo']['name'],
+        'repo_url': e['repo']['url'],
+        'actor_login': e['actor']['login'],
+        'created_at': e['created_at'],
+        'event_type': e['type'],
+        'ingestion_date': pd.Timestamp.today().date()
+    } for e in filtered])
+    
+    return df
+```
 
 ### New Data Source: GitHub Archive
 
@@ -225,14 +297,16 @@ The test file `top-100-chart-2026-03-23T20-40-04.587Z.csv` contains:
 - [ ] Configure `duckdb-default` connection pointing to `local_data.duckdb`
 - [ ] Add environment configurations
 
-**Example Structure:**
+**Example Structure (verified via Context7):**
 ```yaml
+default_environment: default
+
 environments:
   default:
     connections:
       duckdb:
-        - name: duckdb-default
-          database: local_data.duckdb
+        - name: "duckdb-default"
+          path: "./local_data.duckdb"
 ```
 
 ### 3. `docker-compose.yml` (MINOR CHANGES)
