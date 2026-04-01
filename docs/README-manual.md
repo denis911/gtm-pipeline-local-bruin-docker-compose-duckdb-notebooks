@@ -1,127 +1,187 @@
-# Old README - manual steps to start the project
+# Local Bruin Pipeline Setup (Windows 11)
 
-## Setting up local pipeline
+## Prerequisites
 
-For GIT BASH use
-```Terminal: Select Default Profile```
-and select `Git Bash`
+- Docker Desktop installed and running
+- Git Bash (for terminal)
+- UV package manager
 
-For running uv use
+## Quick Start
+
+### 1. Clone and Setup
 
 ```bash
+# Clone the repo
+git clone <repo-url>
+cd <repo-name>
+
+# Initialize UV and sync dependencies
 uv init
 uv venv
 uv sync
 ```
 
-For duckdb use
+### 2. Configure DuckDB Connection (.bruin.yml)
 
-```bash
-uv add duckdb
+Create `.bruin.yml` in the project root:
+
+```yaml
+default_environment: default
+
+environments:
+  default:
+    connections:
+      duckdb:
+        - name: "duckdb-default"
+          path: "./local_data.duckdb"
 ```
 
-For bruin use
+### 3. Configure Pipeline (pipeline.yml)
 
-```bash
-uv add bruin
+Create `pipeline/pipeline.yml`:
+
+```yaml
+name: github-signals-pipeline
+schedule: daily
+start_date: "2026-03-01"
+
+default_connections:
+  duckdb: "duckdb-default"
+
+variables:
+  target_date:
+    type: string
+    default: "{{ env.PIPELINE_DATE | default('today') }}"
 ```
 
-and run bruin in docker as follows - because win 11 stops it:
+## Running Bruin in Docker (Windows 11)
+
+Windows 11 blocks Bruin locally, so run in Docker:
 
 ```bash
-# 1. Validate everything
+# 1. Validate pipeline
 docker compose run --rm bruin bruin validate
 
-# 2. Run the full pipeline for today (or a specific date)
+# 2. Run pipeline for specific date
 docker compose run --rm -e PIPELINE_DATE=2026-03-31 bruin bruin run . --date 2026-03-31
 
-# Or if you use environment variable in your assets:
-docker compose run --rm bruin bruin run .
+# 3. Run with date range
+docker compose run --rm bruin bruin run . --start-date 2026-03-01 --end-date 2026-03-31
 ```
 
-NB! Structure for single Bruin project per repo (most common):
-
-```
-repo-root/
-├── bruin.yaml
-├── pipelines/
-└── ...
-```
-
-then check with:
+## Querying DuckDB
 
 ```bash
-uv run bruin validate .
+# Enter DuckDB CLI
+docker compose run --rm bruin duckdb local_data.duckdb
+
+# Or run locally (if DuckDB installed)
+duckdb local_data.duckdb
 ```
 
-and finally run with:
-
-```bash
-uv run bruin run .
-```
-
-As a result a new duckdb flie is created - `duckdb.db`
-Run the following to check the contents of the duckdb file:
-```bash
-duckdb -ui duckdb.db
-``` 
-
-and see what is inside - for chess players dataset it coul be:
+Example queries:
 
 ```sql
-SELECT name, count(*) AS player_count
-FROM dataset.players
-GROUP BY 1
+-- Check raw signals
+SELECT signal_date, COUNT(*) as count
+FROM raw.github_signals
+GROUP BY signal_date
+ORDER BY signal_date DESC;
+
+-- Top repos by stars
+SELECT repo_name, COUNT(*) as stars
+FROM raw.github_signals
+WHERE event_type = 'WatchEvent'
+GROUP BY repo_name
+ORDER BY stars DESC
+LIMIT 100;
 ```
 
-## Running the pipeline
+## DuckDB SQL Asset Example
 
-After full pileline is ready we can download 1 year worth of data:
-
-```bash
-uv run bruin run \
-   --start-date 2022-01-01 \   
-   --end-date 2023-01-01 \   
-   --full-refresh \
-   --environment default \
-   "c:\tmp\antigravity-bruin-mcp-bigquery\zoomcamp\pipeline\pipeline.yml"
-```
-
-Or adapted to my win 11 PC:
-
-```bash
- uv run bruin run --start-date 2022-01-01 --end-date 2023-01-01   --full-refresh --environment default "c:\tmp\antigravity-bruin-mcp-bigquery\zoomcamp\pipeline\pipeline.yml"
-```
-
-NB - if I try to run it without UV - like `bruin run` - it will crush due
-to win 11 security policies. 
-
-To check the contents of the duckdb file - it has 12 months of data, 2.2 GB in size:
-```bash
-duckdb -ui duckdb.db
-``` 
-
-and run SQL query:
 ```sql
-from duckdb.ingestion.trips
-select count(*)
--- 42722864 rows for 12 months
+/* @bruin
+name: fct_growth_signals
+type: duckdb.sql
+materialization:
+  type: table
+depends:
+  - ingest_github_signals
+@bruin */
+
+SELECT
+    DATE(created_at) as signal_date,
+    SPLIT_PART(repo_name, '/', 1) as company_name,
+    repo_name,
+    repo_url,
+    event_type,
+    COUNT(*) as signal_count,
+    CASE 
+        WHEN COUNT(*) > 100 THEN 'High'
+        WHEN COUNT(*) > 10 THEN 'Medium'
+        ELSE 'Low'
+    END as intent_priority,
+    CURRENT_TIMESTAMP as processed_at
+FROM raw.github_signals
+WHERE signal_date = '{{ BRUIN_START_DATE | default('2026-03-19') }}'
+GROUP BY 1, 2, 3, 4, 5
 ```
 
-In aggregated table we should have 365 rows (1 per each day of 2022):
-```sql
-from duckdb.reports.trips_report
-select count(*)
--- 365 rows
-``` 
--- as we have aggregated revenue and trip distance per day.
+## DuckDB Python Asset Example
 
-We may also check which year/months were aggregated: 
-```sql
-from duckdb.reports.trips_report
-select  year(pickup_date),
-   month(pickup_date),
-   sum(total_revenue) as revenue_per_month
-group by 1, 2
--- 12 months in 2022, total revenue per month
-``` 
+```python
+"""@bruin
+name: ingest_github_signals
+type: python
+image: ghcr.io/bruin-data/bruin-python-sdk:latest
+@bruin"""
+
+import duckdb
+import pandas as pd
+import gzip
+import requests
+
+def get_tech_keywords(csv_path: str) -> list[str]:
+    df = pd.read_csv(csv_path)
+    # ... extract keywords from tech_stack column
+    
+def download_github_archive(date: str) -> pd.DataFrame:
+    url = f"https://data.githubarchive.org/{date}.json.gz"
+    # ... download and parse JSON events
+    
+def ingest_github_data(target_date: str):
+    conn = duckdb.connect('local_data.duckdb')
+    
+    # Create table if not exists
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS raw.github_signals (
+            repo_name VARCHAR,
+            repo_url VARCHAR,
+            actor_login VARCHAR,
+            created_at TIMESTAMP,
+            event_type VARCHAR,
+            ingestion_date DATE,
+            signal_date DATE
+        )
+    """)
+    
+    # Download and process data
+    events = download_github_archive(target_date)
+    keywords = get_tech_keywords("structured_jobs.csv")
+    
+    # Filter for WatchEvent matching keywords
+    # Insert with upsert logic
+    # ...
+
+if __name__ == "__main__":
+    target_date = "2026-03-19"
+    ingest_github_data(target_date)
+```
+
+## Notes
+
+- DuckDB file (`local_data.duckdb`) is gitignored (grows too large)
+- Pipeline uses GitHub Archive: https://data.githubarchive.org/
+- Assets stored in `pipeline/assets/` folder
+- Run `docker compose run --rm bruin bruin lineage .` to see asset dependencies
+
