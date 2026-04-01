@@ -72,12 +72,14 @@ If you see errors, see [Debugging](#-debugging) section below.
 
 ### Step 4: Run the Pipeline
 
-```bash
-# Run for a specific date (recommended for first test)
-docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run . --date 2026-03-19
+The pipeline downloads GitHub events for a specific date. The reference data (top-100-chart) was generated from **2026-03-19**, so run that date first to verify it works:
 
-# Or run for today's date
-docker compose run --rm bruin bruin run .
+```bash
+# Run for the reference date (2026-03-19) - RECOMMENDED for first test
+docker compose run --rm bruin bruin run . --date 2026-03-19
+
+# Alternative: set via environment variable
+docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run .
 ```
 
 ### Step 5: Check the Results
@@ -181,8 +183,10 @@ BRUIN_LOG_LEVEL=INFO
 # Validate pipeline (check for errors)
 docker compose run --rm bruin bruin validate .
 
-# Run for a specific date
-docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run . --date 2026-03-19
+# Run for a specific date (choose ONE method below)
+docker compose run --rm bruin bruin run . --date 2026-03-19
+# OR via environment variable:
+docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run .
 
 # Run for a date range
 docker compose run --rm bruin bruin run . --start-date 2026-03-01 --end-date 2026-03-31
@@ -386,12 +390,14 @@ GROUP BY ingestion_date;
 The pipeline is **idempotent** - you can run it multiple times for the same date without duplicating data.
 
 ```bash
-# Re-run for March 19th
-docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run . --date 2026-03-19
+# Re-run for March 19th (choose ONE method)
+docker compose run --rm bruin bruin run . --date 2026-03-19
+# OR via environment variable:
+docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run .
 
 # Run for multiple dates
 for date in 2026-03-19 2026-03-20 2026-03-21; do
-  docker compose run --rm -e PIPELINE_DATE=$date bruin bruin run . --date $date
+  docker compose run --rm bruin bruin run . --date $date
 done
 ```
 
@@ -404,7 +410,7 @@ done
 ```bash
 # Remove database and re-download all data
 rm local_data.duckdb
-docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run . --date 2026-03-19
+docker compose run --rm bruin bruin run . --date 2026-03-19
 ```
 
 ### Check Docker Resources
