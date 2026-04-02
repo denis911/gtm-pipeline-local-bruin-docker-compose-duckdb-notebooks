@@ -5,7 +5,7 @@ connection: duckdb-default
 
 materialization:
   type: table
-  strategy: append
+  strategy: table
 
 depends:
   - raw.github_signals

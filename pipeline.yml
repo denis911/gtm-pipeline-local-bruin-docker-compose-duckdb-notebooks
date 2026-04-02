@@ -9,4 +9,4 @@ default_connections:
 variables:
   target_date:
     type: string
-    default: "{{ env.PIPELINE_DATE | default(today) }}"
+    default: "2026-03-19"

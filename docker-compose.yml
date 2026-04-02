@@ -4,10 +4,9 @@ services:
 
     container_name: bruin-local-pipeline
 
-    # Mount project and explicitly map DuckDB file
+    # Mount project
     volumes:
       - .:/workspace                  # main project
-      - ./local_data.duckdb:/workspace/local_data.duckdb  # DuckDB persistence
 
     working_dir: /workspace
 
