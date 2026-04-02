@@ -7,7 +7,6 @@ services:
     # Mount project
     volumes:
       - .:/workspace                  # main project
-      - /workspace/.venv              # anonymous volume to keep container venv separate
 
     working_dir: /workspace
 
@@ -19,6 +18,7 @@ services:
     environment:
       - PIPELINE_DATE=${PIPELINE_DATE:-}
       - BRUIN_LOG_LEVEL=${BRUIN_LOG_LEVEL:-INFO}
+      - UV_PROJECT_ENVIRONMENT=/tmp/.venv  # Use an ephemeral venv inside the container
 
     # Error logging: capture output to host
     # Run: docker compose logs -f bruin
