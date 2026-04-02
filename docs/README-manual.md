@@ -33,7 +33,7 @@ environments:
     connections:
       duckdb:
         - name: "duckdb-default"
-          path: "./local_data.duckdb"
+          path: "./data/local_data.duckdb"
 ```
 
 ### 3. Configure Pipeline (pipeline.yml)
@@ -73,10 +73,10 @@ docker compose run --rm bruin bruin run . --start-date 2026-03-01 --end-date 202
 
 ```bash
 # Enter DuckDB CLI
-docker compose run --rm bruin duckdb local_data.duckdb
+docker compose run --rm bruin duckdb data/local_data.duckdb
 
 # Or run locally (if DuckDB installed)
-duckdb local_data.duckdb
+duckdb data/local_data.duckdb
 ```
 
 Example queries:
@@ -180,7 +180,7 @@ if __name__ == "__main__":
 
 ## Notes
 
-- DuckDB file (`local_data.duckdb`) is gitignored (grows too large)
+- DuckDB file (`data/local_data.duckdb`) is gitignored (grows too large)
 - Pipeline uses GitHub Archive: https://data.githubarchive.org/
 - Assets stored in `pipeline/assets/` folder
 - Run `docker compose run --rm bruin bruin lineage .` to see asset dependencies

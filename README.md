@@ -74,10 +74,17 @@ If you see errors, see [Debugging](#-debugging) section below.
 
 ### Step 4: Run the Pipeline
 
-The pipeline downloads GitHub events for a specific date. # Run for the reference date (2026-03-19) - RECOMMENDED for first test
-docker compose run --rm bruin bruin run .
+The pipeline downloads GitHub events for a specific date.
 
-# Or run for a specific date:
+### Step 4: Run the Pipeline
+
+Run for the reference date (2026-03-19) - RECOMMENDED for first test:
+```bash
+docker compose run --rm bruin bruin run .
+```
+
+Or run for a specific date:
+```bash
 docker compose run --rm bruin bruin run . --start-date 2026-03-20
 ```
 
@@ -307,13 +314,13 @@ docker compose logs | grep -i error
 docker compose run --rm bruin bash -c "curl -s https://data.githubarchive.org/2026-03-19-0.json.gz | gunzip | head -1"
 
 # Test DuckDB connection
-docker compose run --rm bruin duckdb local_data.duckdb -c "SELECT 1;"
+docker compose run --rm bruin duckdb data/local_data.duckdb -c "SELECT 1;"
 
 # List all tables
-docker compose run --rm bruin duckdb local_data.duckdb -c "SHOW TABLES;"
+docker compose run --rm bruin duckdb data/local_data.duckdb -c "SHOW TABLES;"
 
 # Check table schema
-docker compose run --rm bruin duckdb local_data.duckdb -c "DESCRIBE raw.github_signals;"
+docker compose run --rm bruin duckdb data/local_data.duckdb -c "DESCRIBE raw.github_signals;"
 ```
 
 ### Inspect Docker Container
