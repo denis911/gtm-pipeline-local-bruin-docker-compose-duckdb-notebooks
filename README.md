@@ -109,8 +109,8 @@ SELECT * FROM fct_growth_signals LIMIT 10;
 ```
 ├── .bruin.yml                    # Bruin connection configuration
 ├── docker-compose.yml            # Docker Compose configuration
+├── pipeline.yml                  # Pipeline settings (ROOT - Bruin requirement)
 ├── pipeline/
-│   ├── pipeline.yml              # Pipeline settings
 │   └── assets/
 │       ├── ingestion/
 │       │   └── ingest_github_signals.py  # Downloads & filters GitHub data
@@ -120,6 +120,8 @@ SELECT * FROM fct_growth_signals LIMIT 10;
 ├── local_data.duckdb            # Local database (gitignored, created on first run)
 └── README.md                    # This file
 ```
+
+**Important:** `pipeline.yml` MUST be in the project root (not in a subfolder) for Bruin to find it.
 
 ---
 
@@ -143,7 +145,7 @@ environments:
 - `path`: Location of your DuckDB file (relative to project root)
 - The DuckDB file is created automatically on first run
 
-### `pipeline/pipeline.yml` - Pipeline Settings
+### `pipeline.yml` - Pipeline Settings (in root folder)
 
 ```yaml
 name: github-signals-pipeline
