@@ -9,6 +9,8 @@ A data pipeline that downloads GitHub events (stars/watches) from [GitHub Archiv
 3. **Stores** results in `local_data.duckdb` using idempotent upserts
 4. **Aggregates** signals into a fact table for analysis
 
+11. **Analyze** data locally using Jupyter Notebooks in the `notebooks/` folder.
+
 ---
 
 ## 📋 Prerequisites
@@ -72,21 +74,30 @@ If you see errors, see [Debugging](#-debugging) section below.
 
 ### Step 4: Run the Pipeline
 
-The pipeline downloads GitHub events for a specific date. The reference data (top-100-chart) was generated from **2026-03-19**, so run that date first to verify it works:
+The pipeline downloads GitHub events for a specific date. # Run for the reference date (2026-03-19) - RECOMMENDED for first test
+docker compose run --rm bruin bruin run .
 
-```bash
-# Run for the reference date (2026-03-19) - RECOMMENDED for first test
-docker compose run --rm bruin bruin run . --date 2026-03-19
-
-# Alternative: set via environment variable
-docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run .
+# Or run for a specific date:
+docker compose run --rm bruin bruin run . --start-date 2026-03-20
 ```
 
-### Step 5: Check the Results
+### Step 5: Analyze the Results (Notebooks)
+
+Since we fixed the local `uv` environment on Windows, you can run the analytics notebook directly on your machine:
 
 ```bash
-# Open DuckDB CLI to inspect data
-docker compose run --rm bruin duckdb local_data.duckdb
+# 1. Start the notebook server
+uv run jupyter notebook notebooks/gtm_signals_analysis.ipynb
+```
+
+This will open a browser where you can query the `data/local_data.duckdb` file produced by Docker.
+
+### Step 6: Visual Exploration (Optional)
+
+If you prefer a database IDE, you can use the DuckDB CLI via Docker:
+
+```bash
+docker compose run --rm bruin duckdb data/local_data.duckdb
 ```
 
 In the DuckDB prompt:
@@ -116,8 +127,11 @@ SELECT * FROM fct_growth_signals LIMIT 10;
 │       │   └── ingest_github_signals.py  # Downloads & filters GitHub data
 │       └── staging/
 │           └── fct_growth_signals.sql     # Aggregates signals
+├── data/
+│   └── local_data.duckdb         # Local database (persistence)
+├── notebooks/
+│   └── gtm_signals_analysis.ipynb # Analysis & viz
 ├── structured_jobs.csv           # Tech keywords source
-├── local_data.duckdb            # Local database (gitignored, created on first run)
 └── README.md                    # This file
 ```
 
@@ -139,7 +153,7 @@ environments:
     connections:
       duckdb:
         - name: "duckdb-default"
-          path: "./local_data.duckdb"
+          path: "./data/local_data.duckdb"
 ```
 
 - `path`: Location of your DuckDB file (relative to project root)
