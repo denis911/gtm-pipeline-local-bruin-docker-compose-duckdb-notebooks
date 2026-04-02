@@ -54,7 +54,7 @@ cd gtm-pipeline-local-bruin-docker-compose-duckdb-notebooks
 
 1. Open **Docker Desktop** from Start Menu
 2. Wait for the whale icon in the system tray to stop animating
-3. Green whale = Docker is running ✅
+3. Green/white whale in tray = Docker is running ✅
 
 ### Step 3: Validate the Pipeline
 
