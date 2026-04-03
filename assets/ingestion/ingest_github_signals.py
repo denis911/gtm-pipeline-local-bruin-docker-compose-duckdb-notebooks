@@ -73,16 +73,16 @@ def get_tech_keywords(csv_path: str) -> List[str]:
     return list(keywords)
 
 
-def download_github_archive(date_str: str) -> List[dict]:
-    """Download and parse GitHub Archive JSON for a given date."""
-    # Format: 2026-03-19 -> 2026-03-19-0.json.gz (hour 0)
-    # GitHub Archive files are hourly, but we can get all hours for simplicity
-    url = f"https://data.githubarchive.org/{date_str}-0.json.gz"
-    
-    print(f"Downloading GitHub Archive from: {url}")
+def download_github_archive_hour(session: requests.Session, date_str: str, hour: int) -> List[dict]:
+    """Download and parse GitHub Archive JSON for a given date and hour."""
+    url = f"https://data.githubarchive.org/{date_str}-{hour}.json.gz"
     
     try:
-        response = requests.get(url, timeout=60)
+        response = session.get(url, timeout=30)
+        if response.status_code == 404:
+            # Common for "today" - ignore gracefully
+            return []
+            
         response.raise_for_status()
         
         # Decompress gzip
@@ -94,75 +94,83 @@ def download_github_archive(date_str: str) -> List[dict]:
             if line:
                 events.append(json.loads(line))
         
-        print(f"Downloaded {len(events)} events")
         return events
         
-    except requests.exceptions.RequestException as e:
-        print(f"Error downloading GitHub Archive: {e}")
+    except Exception as e:
+        print(f"  ![Hour {hour}] Error: {e}")
         return []
 
 
 def materialize():
     """
     Main function called by Bruin.
-    Downloads GitHub events and filters for tech-related star events.
-    Returns a DataFrame that Bruin will upsert into DuckDB.
+    Downloads GitHub events for ALL 24 hours of the target date.
+    Returns a combined DataFrame for idempotence and upsert.
     """
     # Get target date from environment (Bruin's default, or Docker's PIPELINE_DATE)
     target_date = os.environ.get('BRUIN_START_DATE') or os.environ.get('PIPELINE_DATE', '2026-03-19')
     
-    print(f"Starting GitHub signals ingestion for date: {target_date}")
+    print(f"🚀 Starting FULL DAY ingestion (24 hours) for: {target_date}")
     
     # Load tech keywords
     keywords = get_tech_keywords('structured_jobs.csv')
-    print(f"Loaded {len(keywords)} tech keywords")
+    print(f"📍 Loaded {len(keywords)} tech keywords for filtering...")
     
-    # Download GitHub Archive data
-    events = download_github_archive(target_date)
+    all_filtered_events = []
+    total_raw_events = 0
+
+    # Use a session for efficient multi-hour downloads
+    with requests.Session() as session:
+        for hour in range(24):
+            print(f"  [{hour:02d}/23] Fetching hour {hour}...", end='\r')
+            
+            hourly_events = download_github_archive_hour(session, target_date, hour)
+            if not hourly_events:
+                continue
+                
+            total_raw_events += len(hourly_events)
+            
+            # Filter for WatchEvent (Stars)
+            for event in hourly_events:
+                try:
+                    if event.get('type') != 'WatchEvent':
+                        continue
+                        
+                    repo_name = event.get('repo', {}).get('name', '')
+                    repo_name_lower = repo_name.lower()
+                    
+                    if any(kw in repo_name_lower for kw in keywords):
+                        all_filtered_events.append({
+                            'signal_date': target_date,
+                            'repo_name': repo_name,
+                            'repo_url': event.get('repo', {}).get('url', ''),
+                            'actor_login': event.get('actor', {}).get('login', ''),
+                            'created_at': event.get('created_at', ''),
+                            'event_type': 'WatchEvent',
+                            'ingestion_date': datetime.now().date()
+                        })
+                except:
+                    continue
+            
+            # Clean up memory per hour
+            del hourly_events
+
+    print(f"\n✅ Finished processing 24 hours.")
+    print(f"📊 Summary:")
+    print(f"  - Total events scanned: {total_raw_events:,}")
+    print(f"  - Matching signals found: {len(all_filtered_events):,}")
     
-    if not events:
-        print("No events downloaded, returning empty DataFrame")
+    # Convert to DataFrame
+    df = pd.DataFrame(all_filtered_events)
+    
+    if not df.empty:
+        df['created_at'] = pd.to_datetime(df['created_at'])
+        df['signal_date'] = pd.to_datetime(df['signal_date']).dt.date
+        df['ingestion_date'] = pd.to_datetime(df['ingestion_date']).dt.date
+    else:
         return pd.DataFrame(columns=[
             'signal_date', 'repo_name', 'repo_url', 'actor_login',
             'created_at', 'event_type', 'ingestion_date'
         ])
-    
-    # Filter for WatchEvent (GitHub stars) matching tech keywords
-    filtered_events = []
-    for event in events:
-        try:
-            event_type = event.get('type', '')
-            if event_type != 'WatchEvent':
-                continue
-            
-            repo = event.get('repo', {})
-            repo_name = repo.get('name', '')
-            
-            # Check if any keyword matches in repo name
-            repo_name_lower = repo_name.lower()
-            if any(kw in repo_name_lower for kw in keywords):
-                filtered_events.append({
-                    'signal_date': target_date,
-                    'repo_name': repo_name,
-                    'repo_url': repo.get('url', ''),
-                    'actor_login': event.get('actor', {}).get('login', ''),
-                    'created_at': event.get('created_at', ''),
-                    'event_type': event_type,
-                    'ingestion_date': datetime.now().date()
-                })
-        except Exception as e:
-            # Skip malformed events
-            continue
-    
-    print(f"Filtered to {len(filtered_events)} matching WatchEvents")
-    
-    # Convert to DataFrame
-    df = pd.DataFrame(filtered_events)
-    
-    if not df.empty:
-        # Ensure correct types
-        df['created_at'] = pd.to_datetime(df['created_at'])
-        df['signal_date'] = pd.to_datetime(df['signal_date']).dt.date
-        df['ingestion_date'] = pd.to_datetime(df['ingestion_date']).dt.date
     
     return df
