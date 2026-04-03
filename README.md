@@ -78,13 +78,14 @@ If you see errors, see [Debugging](#-debugging) section below.
 The pipeline downloads GitHub events for a specific date. 
 
 **Run with the built-in reference date (2026-03-19)**:
-NB: it takes about 5 mins to download data for 1 day
+
+(NB: it takes about 5 mins to download data for 1 day)
 
 ```bash
 docker compose run --rm bruin bruin run .
 ```
 
-You will see something similar in console:
+You will see something similar in the console:
 ```bash
 [07:12:07] [raw.github_signals] >> 🚀 Starting FULL DAY ingestion (24 hours) for: 2026-03-19
 [07:12:08] [raw.github_signals] >> 📍 Loaded 269 tech keywords for filtering...
@@ -98,7 +99,7 @@ You will see something similar in console:
 [07:16:24] Finished: raw.github_signals (4m35.826s) 
 ```
 
-*Note: We have pre-configured this date in `docker-compose.yml` to make first-run tests easier.*
+*Note: We have pre-configured this date 2026-03-19 in `docker-compose.yml` to make first-run tests easier and reproducible.*
 
 **Or run for a specific date:**
 ```bash
