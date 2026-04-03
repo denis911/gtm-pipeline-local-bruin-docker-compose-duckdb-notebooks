@@ -10,6 +10,7 @@ A data pipeline that downloads GitHub events (stars/watches) from [GitHub Archiv
 4. **Aggregates** signals into a fact table for analysis
 
 11. **Analyze** data locally using Jupyter Notebooks in the `notebooks/` folder.
+12. **Automatic Isolation**: Designed to run cleanly even when shared between Windows host and Docker Linux.
 
 ---
 
@@ -74,16 +75,16 @@ If you see errors, see [Debugging](#-debugging) section below.
 
 ### Step 4: Run the Pipeline
 
-The pipeline downloads GitHub events for a specific date.
+The pipeline downloads GitHub events for a specific date. 
 
-### Step 4: Run the Pipeline
-
-Run for the reference date (2026-03-19) - RECOMMENDED for first test:
+**Run with the built-in reference date (2026-03-19)**:
 ```bash
 docker compose run --rm bruin bruin run .
 ```
 
-Or run for a specific date:
+*Note: We have pre-configured this date in `docker-compose.yml` to make first-run tests easier.*
+
+**Or run for a specific date:**
 ```bash
 docker compose run --rm bruin bruin run . --start-date 2026-03-20
 ```
@@ -128,12 +129,11 @@ SELECT * FROM fct_growth_signals LIMIT 10;
 ├── .bruin.yml                    # Bruin connection configuration
 ├── docker-compose.yml            # Docker Compose configuration
 ├── pipeline.yml                  # Pipeline settings (ROOT - Bruin requirement)
-├── pipeline/
-│   └── assets/
-│       ├── ingestion/
-│       │   └── ingest_github_signals.py  # Downloads & filters GitHub data
-│       └── staging/
-│           └── fct_growth_signals.sql     # Aggregates signals
+├── assets/                       # Pipeline assets
+│   ├── ingestion/
+│   │   └── ingest_github_signals.py  # Downloads & filters GitHub data
+│   └── staging/
+│       └── fct_growth_signals.sql     # Aggregates signals
 ├── data/
 │   └── local_data.duckdb         # Local database (persistence)
 ├── notebooks/
@@ -179,7 +179,7 @@ default_connections:
 variables:
   target_date:
     type: string
-    default: "{{ env.PIPELINE_DATE | default(today) }}"
+    default: "2026-03-19"
 ```
 
 - `schedule`: How often to run (`daily`, `hourly`, etc.)
@@ -207,7 +207,7 @@ BRUIN_LOG_LEVEL=INFO
 docker compose run --rm bruin bruin validate .
 
 # Run for a specific date (choose ONE method below)
-docker compose run --rm bruin bruin run . --date 2026-03-19
+docker compose run --rm bruin bruin run . --start-date 2026-03-19
 # OR via environment variable:
 docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run .
 
@@ -225,7 +225,7 @@ docker compose run --rm bruin bruin run . --select raw.github_signals
 
 ```bash
 # Open DuckDB CLI with the database
-docker compose run --rm bruin duckdb local_data.duckdb
+docker compose run --rm bruin duckdb data/local_data.duckdb
 
 # Run Python with DuckDB
 docker compose run --rm bruin python -c "import duckdb; print(duckdb.__version__)"
@@ -244,7 +244,7 @@ docker compose down
 docker compose down -v --rmi all
 
 # Remove the DuckDB file to start fresh
-rm local_data.duckdb
+rm data/local_data.duckdb
 ```
 
 ---
@@ -432,8 +432,8 @@ done
 
 ```bash
 # Remove database and re-download all data
-rm local_data.duckdb
-docker compose run --rm bruin bruin run . --date 2026-03-19
+rm data/local_data.duckdb
+docker compose run --rm bruin bruin run .
 ```
 
 ### Check Docker Resources
@@ -492,4 +492,4 @@ curl -I https://data.githubarchive.org/2026-03-19-0.json.gz
 
 ---
 
-*Last updated: 2026-04-01*
+*Last updated: 2026-04-03*
