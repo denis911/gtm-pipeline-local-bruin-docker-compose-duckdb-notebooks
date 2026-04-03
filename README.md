@@ -79,12 +79,11 @@ The pipeline downloads GitHub events for a specific date.
 
 **Run with the built-in reference date (2026-03-19)**:
 
-(NB: it takes about 5 mins to download data for 1 day)
-
 ```bash
 docker compose run --rm bruin bruin run .
 ```
 
+(NB: it takes about 5 mins to download data for 1 day)
 You will see something similar in the console:
 ```bash
 [07:12:07] [raw.github_signals] >> 🚀 Starting FULL DAY ingestion (24 hours) for: 2026-03-19
