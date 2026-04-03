@@ -16,7 +16,8 @@ services:
 
     # Environment variables
     environment:
-      - PIPELINE_DATE=${PIPELINE_DATE:-}
+      - PIPELINE_DATE=${PIPELINE_DATE:-2026-03-19}
+      - BRUIN_START_DATE=${BRUIN_START_DATE:-2026-03-19}
       - BRUIN_LOG_LEVEL=${BRUIN_LOG_LEVEL:-INFO}
       - UV_PROJECT_ENVIRONMENT=/tmp/.venv  # Use an ephemeral venv inside the container
 

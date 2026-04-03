@@ -108,8 +108,8 @@ def materialize():
     Downloads GitHub events and filters for tech-related star events.
     Returns a DataFrame that Bruin will upsert into DuckDB.
     """
-    # Get target date from environment or use default
-    target_date = os.environ.get('BRUIN_START_DATE', '2026-03-19')
+    # Get target date from environment (Bruin's default, or Docker's PIPELINE_DATE)
+    target_date = os.environ.get('BRUIN_START_DATE') or os.environ.get('PIPELINE_DATE', '2026-03-19')
     
     print(f"Starting GitHub signals ingestion for date: {target_date}")
     
