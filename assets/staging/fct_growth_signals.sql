@@ -25,5 +25,5 @@ SELECT
     END as intent_priority,
     CURRENT_TIMESTAMP as processed_at
 FROM raw.github_signals
-WHERE signal_date = '{{ BRUIN_START_DATE | default('2026-03-19') }}'
+-- WHERE signal_date = '{{ BRUIN_START_DATE | default('2026-03-19') }}'
 GROUP BY 1, 2, 3, 4, 5

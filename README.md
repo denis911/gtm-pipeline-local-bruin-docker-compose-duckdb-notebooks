@@ -7,7 +7,7 @@ A data pipeline that downloads GitHub events (stars/watches) from [GitHub Archiv
 1. **Downloads** GitHub events for a specific date from GitHub Archive
 2. **Filters** for `WatchEvent` (GitHub stars) matching tech keywords from `structured_jobs.csv`
 3. **Stores** results in `local_data.duckdb` using idempotent upserts
-4. **Aggregates** signals into a fact table for analysis
+4. **Aggregates** ALL historical signals into a fact table for analysis
 
 11. **Analyze** data locally using Jupyter Notebooks in the `notebooks/` folder.
 12. **Automatic Isolation**: Designed to run cleanly even when shared between Windows host and Docker Linux.
@@ -379,13 +379,13 @@ The pipeline is **idempotent** - you can run it multiple times for the same date
 
 ```bash
 # Re-run for March 19th (choose ONE method)
-docker compose run --rm bruin bruin run . --date 2026-03-19
+docker compose run --rm bruin bruin run . --start-date 2026-03-19
 # OR via environment variable:
 docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run .
 
 # Run for multiple dates
 for date in 2026-03-19 2026-03-20 2026-03-21; do
-  docker compose run --rm bruin bruin run . --date $date
+  docker compose run --rm bruin bruin run . --start-date $date
 done
 ```
 
@@ -457,4 +457,4 @@ curl -I https://data.githubarchive.org/2026-03-19-0.json.gz
 
 ---
 
-*Last updated: 2026-04-03*
+*Last updated: 2026-04-04*
