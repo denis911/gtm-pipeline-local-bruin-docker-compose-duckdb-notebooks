@@ -239,19 +239,6 @@ docker compose run --rm bruin bruin run . --full-refresh
 docker compose run --rm bruin bruin run . --select raw.github_signals
 ```
 
-### Interactive Commands
-
-```bash
-# Open DuckDB CLI with the database
-docker compose run --rm bruin duckdb data/local_data.duckdb
-
-# Run Python with DuckDB
-docker compose run --rm bruin python -c "import duckdb; print(duckdb.__version__)"
-
-# Check Bruin version
-docker compose run --rm bruin bruin --version
-```
-
 ### Cleanup Commands
 
 ```bash
@@ -268,46 +255,6 @@ rm data/local_data.duckdb
 ---
 
 ## 🔍 Debugging
-
-### Common Errors
-
-#### 1. "Docker Desktop is not running"
-
-```
-error during connect: Get "http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/..."
-```
-
-**Fix:** Start Docker Desktop from Start Menu, wait for green whale icon.
-
-#### 2. "Connection refused"
-
-```
-Cannot connect to the Docker daemon at unix:///var/run/docker.sock
-```
-
-**Fix:** Same as above - ensure Docker Desktop is running.
-
-#### 3. "Port already allocated"
-
-```
-Bind for 0.0.0.0:5432 failed: port is already allocated
-```
-
-**Fix:** Stop other containers using the same port:
-```bash
-docker compose down
-docker ps  # check for other containers
-```
-
-#### 4. Validation errors
-
-```bash
-# Run with more verbose output
-docker compose run --rm -e BRUIN_LOG_LEVEL=DEBUG bruin bruin validate .
-
-# Check specific asset
-docker compose run --rm bruin bruin run . --select raw.github_signals --dry-run
-```
 
 ### Viewing Logs
 
