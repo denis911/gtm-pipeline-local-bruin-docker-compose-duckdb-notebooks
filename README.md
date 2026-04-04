@@ -119,13 +119,13 @@ This will open a browser where you can query the `data/local_data.duckdb` file p
 
 ### Step 6: Visual Exploration (Optional)
 
-If you prefer a database IDE, you can use the DuckDB CLI via Docker:
+If you prefer a database IDE, you can use the DuckDB web UI - usually available at `http://localhost:4213` or opens automatically in a new browser window:
 
 ```bash
-docker compose run --rm bruin duckdb data/local_data.duckdb
+duckdb -ui data/local_data.duckdb
 ```
 
-In the DuckDB prompt:
+In the DuckDB notebook:
 
 ```sql
 -- Check raw signals table
@@ -136,6 +136,7 @@ SELECT * FROM fct_growth_signals LIMIT 10;
 
 -- Exit DuckDB
 .exit
+.quit
 ```
 
 ---
