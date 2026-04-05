@@ -127,6 +127,9 @@ Since we fixed the local `uv` environment on Windows, you can run the analytics 
 ```bash
 # 1. Start the notebook server
 uv run jupyter notebook notebooks/gtm_signals_analysis.ipynb
+
+# or if win 11 security blocks it
+uv run python -m jupyterlab notebooks/gtm_signals_analysis.ipynb
 ```
 
 This will open a browser where you can query the `data/local_data.duckdb` file produced by Docker.
