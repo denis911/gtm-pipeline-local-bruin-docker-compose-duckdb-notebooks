@@ -14,6 +14,19 @@ A data pipeline that downloads GitHub events (stars/watches) from [GitHub Archiv
 
 ---
 
+## 💻 Performance Expectations
+
+*Data based on ingestions from March 2026 on a Windows 11 host:*
+
+| Metric | Observation |
+| :--- | :--- |
+| **Ingestion Time** | ~5 minutes per 24-hour day |
+| **RAM Usage** | ~24GB peak (processing ~4M GitHub events) |
+| **Storage Growth** | ~2MB per day of filtered GTM signals |
+| **Signal Yield** | ~14k - 17k matching signals per day |
+
+---
+
 ## 📋 Prerequisites
 
 ### Required Software
@@ -230,6 +243,7 @@ docker compose run --rm bruin bruin run . --start-date 2026-03-19
 docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run .
 
 # Run for a date range
+# (Note: Bruin will execute the pipeline once for EACH day in the range)
 docker compose run --rm bruin bruin run . --start-date 2026-03-01 --end-date 2026-03-31
 
 # Run with full refresh (reprocess all data)
@@ -457,4 +471,4 @@ curl -I https://data.githubarchive.org/2026-03-19-0.json.gz
 
 ---
 
-*Last updated: 2026-04-04*
+*Last updated: 2026-04-05*
