@@ -11,6 +11,7 @@ A data pipeline that downloads GitHub events (stars/watches) from [GitHub Archiv
 
 11. **Analyze** data locally using Jupyter Notebooks in the `notebooks/` folder.
 12. **Automatic Isolation**: Designed to run cleanly even when shared between Windows host and Docker Linux.
+13. **Safe Ingestion**: Limited to 24-hour daily intervals per run for maximum stability and memory management.
 
 ---
 
@@ -242,10 +243,6 @@ docker compose run --rm bruin bruin run . --start-date 2026-03-19
 # OR via environment variable:
 docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run .
 
-# Run for a date range
-# (Note: Bruin will execute the pipeline once for EACH day in the range)
-docker compose run --rm bruin bruin run . --start-date 2026-03-01 --end-date 2026-03-31
-
 # Run with full refresh (reprocess all data)
 docker compose run --rm bruin bruin run . --full-refresh
 
@@ -397,9 +394,9 @@ docker compose run --rm bruin bruin run . --start-date 2026-03-19
 # OR via environment variable:
 docker compose run --rm -e PIPELINE_DATE=2026-03-19 bruin bruin run .
 
-# Run for multiple dates
-for date in 2026-03-19 2026-03-20 2026-03-21; do
-  docker compose run --rm bruin bruin run . --start-date $date
+# Run for multiple dates (Git Bash loop)
+for day in 19 20 21; do
+  docker compose run --rm bruin bruin run . --start-date 2026-03-$day
 done
 ```
 
