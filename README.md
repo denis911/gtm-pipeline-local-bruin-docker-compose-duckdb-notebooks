@@ -100,7 +100,7 @@ docker compose run --rm bruin bruin run .
 (NB: it takes about 5 mins to download data for 1 day)
 
 You will see something similar in the console:
-```bash
+```txt
 [07:12:07] [raw.github_signals] >> 🚀 Starting FULL DAY ingestion (24 hours) for: 2026-03-19
 [07:12:08] [raw.github_signals] >> 📍 Loaded 269 tech keywords for filtering...
   [23/23] Fetching hour 23...s] >>   [00/23] Fetching hour 0...
