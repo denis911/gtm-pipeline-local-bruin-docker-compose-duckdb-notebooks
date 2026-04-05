@@ -147,8 +147,11 @@ SELECT signal_date, COUNT(*) as count FROM raw.github_signals GROUP BY signal_da
 
 -- Check aggregated signals
 SELECT * FROM fct_growth_signals LIMIT 10;
+```
 
--- Exit DuckDB
+Exit DuckDB in the console:
+
+```bash
 .exit
 .quit
 ```
