@@ -1,0 +1,21 @@
+signal_date,company_name,repo_name,repo_url,event_type,signal_count,intent_priority,processed_at
+2026-03-23,affaan-m,affaan-m/everything-claude-code,https://api.github.com/repos/affaan-m/everything-claude-code,WatchEvent,440,High,2026-04-06 19:29:50.540093+02:00
+2026-03-23,Crosstalk-Solutions,Crosstalk-Solutions/project-nomad,https://api.github.com/repos/Crosstalk-Solutions/project-nomad,WatchEvent,404,High,2026-04-06 19:29:50.540093+02:00
+2026-03-24,affaan-m,affaan-m/everything-claude-code,https://api.github.com/repos/affaan-m/everything-claude-code,WatchEvent,396,High,2026-04-06 19:29:50.540093+02:00
+2026-03-25,microsoft,microsoft/RustTraining,https://api.github.com/repos/microsoft/RustTraining,WatchEvent,377,High,2026-04-06 19:29:50.540093+02:00
+2026-03-25,affaan-m,affaan-m/everything-claude-code,https://api.github.com/repos/affaan-m/everything-claude-code,WatchEvent,360,High,2026-04-06 19:29:50.540093+02:00
+2026-03-26,affaan-m,affaan-m/everything-claude-code,https://api.github.com/repos/affaan-m/everything-claude-code,WatchEvent,265,High,2026-04-06 19:29:50.540093+02:00
+2026-03-27,microsoft,microsoft/RustTraining,https://api.github.com/repos/microsoft/RustTraining,WatchEvent,260,High,2026-04-06 19:29:50.540093+02:00
+2026-03-24,microsoft,microsoft/RustTraining,https://api.github.com/repos/microsoft/RustTraining,WatchEvent,255,High,2026-04-06 19:29:50.540093+02:00
+2026-03-24,Crosstalk-Solutions,Crosstalk-Solutions/project-nomad,https://api.github.com/repos/Crosstalk-Solutions/project-nomad,WatchEvent,240,High,2026-04-06 19:29:50.540093+02:00
+2026-03-23,pascalorg,pascalorg/editor,https://api.github.com/repos/pascalorg/editor,WatchEvent,230,High,2026-04-06 19:29:50.540093+02:00
+2026-03-25,pascalorg,pascalorg/editor,https://api.github.com/repos/pascalorg/editor,WatchEvent,228,High,2026-04-06 19:29:50.540093+02:00
+2026-03-27,affaan-m,affaan-m/everything-claude-code,https://api.github.com/repos/affaan-m/everything-claude-code,WatchEvent,221,High,2026-04-06 19:29:50.540093+02:00
+2026-03-23,MiniMax-AI,MiniMax-AI/skills,https://api.github.com/repos/MiniMax-AI/skills,WatchEvent,218,High,2026-04-06 19:29:50.540093+02:00
+2026-03-26,microsoft,microsoft/RustTraining,https://api.github.com/repos/microsoft/RustTraining,WatchEvent,206,High,2026-04-06 19:29:50.540093+02:00
+2026-03-24,pascalorg,pascalorg/editor,https://api.github.com/repos/pascalorg/editor,WatchEvent,195,High,2026-04-06 19:29:50.540093+02:00
+2026-03-27,paperclipai,paperclipai/paperclip,https://api.github.com/repos/paperclipai/paperclip,WatchEvent,180,High,2026-04-06 19:29:50.540093+02:00
+2026-03-25,MiniMax-AI,MiniMax-AI/skills,https://api.github.com/repos/MiniMax-AI/skills,WatchEvent,169,High,2026-04-06 19:29:50.540093+02:00
+2026-03-25,Crosstalk-Solutions,Crosstalk-Solutions/project-nomad,https://api.github.com/repos/Crosstalk-Solutions/project-nomad,WatchEvent,148,High,2026-04-06 19:29:50.540093+02:00
+2026-03-24,shareAI-lab,shareAI-lab/learn-claude-code,https://api.github.com/repos/shareAI-lab/learn-claude-code,WatchEvent,148,High,2026-04-06 19:29:50.540093+02:00
+2026-03-23,Donchitos,Donchitos/Claude-Code-Game-Studios,https://api.github.com/repos/Donchitos/Claude-Code-Game-Studios,WatchEvent,140,High,2026-04-06 19:29:50.540093+02:00
